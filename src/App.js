@@ -1,8 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useAuth } from './contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import CategoryManager from './components/CategoryManager';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { CheckCircleFill, XCircle, CheckCircle, Pencil, Trash, Check, X, GripVertical, Book, ListCheck, Gear } from 'react-bootstrap-icons';
 
 const SortableItem = React.memo(React.forwardRef(({ id, children, disabled = false }, ref) => {
@@ -80,7 +84,26 @@ function App() {
   const [themeColor, setThemeColor] = useState('#20c997');
   const [showThemePicker, setShowThemePicker] = useState(false);
   
-  // Available theme colors
+  const { currentUser, logout, loading: isAuthLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  // Set loading to false when auth state changes
+  React.useEffect(() => {
+    if (currentUser !== undefined) {
+      // Auth state has been determined
+    }
+  }, [currentUser]);
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out', error);
+    }
+  };
+
+  // Theme colors for the theme picker
   const themeColors = [
     '#20c997', // Teal
     '#0d6efd', // Blue
@@ -648,6 +671,57 @@ function App() {
   
   // Render the main component
 
+  // Render loading state
+  if (isAuthLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center min-vh-100">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Render login/signup if not authenticated
+  if (!currentUser) {
+    return (
+      <div className="d-flex flex-column min-vh-100">
+        <nav className="navbar navbar-expand-lg navbar-dark" style={{ backgroundColor: themeColor }}>
+          <div className="container">
+            <a className="navbar-brand d-flex align-items-center" href="/">
+              <Book className="me-2" size={24} />
+              TaskFlow
+            </a>
+          </div>
+        </nav>
+        <main className="container my-5">
+          <div className="row justify-content-center">
+            <div className="col-md-6">
+              <div className="card">
+                <div className="card-header text-white" style={{ backgroundColor: themeColor }}>
+                  <h1 className="h4 mb-0">Welcome to TaskFlow</h1>
+                </div>
+                <div className="card-body text-center py-5">
+                  <i className="bi bi-list-check display-1 text-muted mb-3"></i>
+                  <h2>Please sign in to continue</h2>
+                  <p className="text-muted mb-4">Manage your tasks with ease</p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => window.location.href = '/login'}
+                    style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                  >
+                    Sign In / Sign Up
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Main app when authenticated
   return (
     <div className="d-flex flex-column min-vh-100">
       {/* Navigation Bar */}
@@ -659,22 +733,54 @@ function App() {
           </a>
           
           <div className="d-flex align-items-center">
-            <span className="text-white me-3 d-none d-md-inline">
+            {currentUser && (
+              <div className="dropdown me-3">
+                <button 
+                  className="btn btn-outline-light dropdown-toggle d-flex align-items-center" 
+                  type="button" 
+                  id="userDropdown" 
+                  data-bs-toggle="dropdown" 
+                  aria-expanded="false"
+                  style={{
+                    border: '1px solid rgba(255, 255, 255, 0.5)',
+                    padding: '0.25rem 0.75rem'
+                  }}
+                >
+                  <i className="bi bi-person-circle me-2"></i>
+                  <span className="d-none d-md-inline">
+                    {currentUser.displayName || 'User'}
+                  </span>
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li><a className="dropdown-item" href="#" onClick={toggleThemePicker}>
+                    <i className="bi bi-palette me-2"></i>Change Theme
+                  </a></li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li>
+                    <button className="dropdown-item text-danger" onClick={handleLogout}>
+                      <i className="bi bi-box-arrow-right me-2"></i>Logout
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            ) || (
+              <button 
+                className="btn btn-outline-light me-3"
+                onClick={toggleThemePicker}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  border: '1px solid rgba(255, 255, 255, 0.5)'
+                }}
+              >
+                <Gear size={16} />
+                <span>Theme</span>
+              </button>
+            )}
+            <span className="text-white d-none d-md-inline" style={{ minWidth: '80px' }}>
               Progress: {progress}%
             </span>
-            <button 
-              className="btn btn-outline-light"
-              onClick={toggleThemePicker}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                border: '1px solid rgba(255, 255, 255, 0.5)'
-              }}
-            >
-              <Gear size={16} />
-              <span>Theme</span>
-            </button>
           </div>
         </div>
       </nav>
@@ -683,7 +789,13 @@ function App() {
       <main className="container my-4 flex-grow-1">
         <div className="row justify-content-center">
           <div className="col-md-8">
-            <div className="card">
+            {/* Category Manager - Only show when authenticated */}
+            {currentUser && (
+              <CategoryManager themeColor={themeColor} />
+            )}
+            
+            {/* Tasks Card */}
+            <div className="card mt-4">
               <div className="card-header text-white" style={{ backgroundColor: themeColor }}>
                 <h1 className="h4 mb-0">TaskFlow Checklist</h1>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Login = ({ themeColor }) => {
   const [email, setEmail] = useState('');
@@ -9,7 +9,7 @@ const Login = ({ themeColor }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { login, signInWithGoogle } = useContext(AuthContext);
+  const { login, signInWithGoogle } = useAuth();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
 

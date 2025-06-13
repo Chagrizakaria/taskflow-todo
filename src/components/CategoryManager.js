@@ -5,11 +5,11 @@ import {
   deleteCategory, 
   getUserCategories 
 } from '../firebase';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Pencil, Trash, X, Check } from 'react-bootstrap-icons';
 
 const CategoryManager = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser } = useAuth();
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
   const [editingId, setEditingId] = useState(null);

@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Signup = ({ themeColor }) => {
   const [email, setEmail] = useState('');
@@ -10,7 +10,7 @@ const Signup = ({ themeColor }) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { signup, signInWithGoogle } = useContext(AuthContext);
+  const { signup, signInWithGoogle } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

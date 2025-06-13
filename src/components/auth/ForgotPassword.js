@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ForgotPassword = ({ themeColor }) => {
   const [email, setEmail] = useState('');
@@ -8,7 +8,7 @@ const ForgotPassword = ({ themeColor }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { resetPassword } = useContext(AuthContext);
+  const { resetPassword } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

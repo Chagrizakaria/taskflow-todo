@@ -89,15 +89,15 @@ const SortableTodoItem = React.memo(({
 });
 
 // Delete Confirmation Modal
-const DeleteConfirmationModal = ({ onConfirm, onCancel, themeColor }) => (
+const DeleteConfirmationModal = ({ title, message, onConfirm, onCancel, themeColor }) => (
     <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
                 <div className="modal-header" style={{ backgroundColor: themeColor, color: 'white' }}>
-                    <h5 className="modal-title">Confirm Delete</h5>
+                    <h5 className="modal-title">{title}</h5>
                     <button type="button" className="btn-close btn-close-white" onClick={onCancel}></button>
                 </div>
-                <div className="modal-body">Are you sure you want to delete this task?</div>
+                <div className="modal-body">{message}</div>
                 <div className="modal-footer">
                     <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
                     <button type="button" className="btn btn-danger" onClick={onConfirm}>Delete</button>
@@ -154,6 +154,7 @@ function App() {
     const [todoToDelete, setTodoToDelete] = useState(null);
     const [themeColor, setThemeColor] = useState('#20c997');
     const [showThemePicker, setShowThemePicker] = useState(false);
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
     const { currentUser, logout } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -314,23 +315,27 @@ function App() {
         }
     };
 
-    const resetAll = async () => {
+    const resetAll = () => {
         if (!currentUser || todos.length === 0) return;
-        if (window.confirm('Are you sure you want to delete all tasks? This action cannot be undone.')) {
-            const originalTodos = [...todos];
-            setTodos([]);
-            try {
-                const batch = writeBatch(db);
-                originalTodos.forEach(todo => {
-                    const taskRef = doc(db, tasksCollection, todo.id);
-                    batch.delete(taskRef);
-                });
-                await batch.commit();
-            } catch (error) {
-                console.error('Error deleting all tasks:', error);
-                alert('Failed to delete all tasks. Reverting changes.');
-                setTodos(originalTodos);
-            }
+        setShowDeleteAllModal(true);
+    };
+
+    const handleDeleteAll = async () => {
+        if (!currentUser || todos.length === 0) return;
+        setShowDeleteAllModal(false);
+        const originalTodos = [...todos];
+        setTodos([]);
+        try {
+            const batch = writeBatch(db);
+            originalTodos.forEach(todo => {
+                const taskRef = doc(db, tasksCollection, todo.id);
+                batch.delete(taskRef);
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error('Error deleting all tasks:', error);
+            alert('Failed to delete all tasks. Reverting changes.');
+            setTodos(originalTodos);
         }
     };
 
@@ -339,7 +344,6 @@ function App() {
         return todos.length > 0 ? Math.round((completed / todos.length) * 100) : 0;
     }, [todos]);
 
-    // Loading state
     if (loading) {
         return (
             <div className="vh-100 d-flex justify-content-center align-items-center">
@@ -350,7 +354,6 @@ function App() {
         );
     }
 
-    // Login prompt if not authenticated
     if (!currentUser) {
         return (
             <div className="container-fluid vh-100 d-flex justify-content-center align-items-center bg-light">
@@ -363,11 +366,34 @@ function App() {
         );
     }
 
-    // Main App UI
     return (
         <div className="container-fluid vh-100 d-flex flex-column p-0 bg-light">
-            {showDeleteModal && <DeleteConfirmationModal onConfirm={handleDelete} onCancel={() => setShowDeleteModal(false)} themeColor={themeColor} />}
-            <ThemePickerModal isOpen={showThemePicker} onClose={() => setShowThemePicker(false)} onSelectTheme={setThemeColor} currentTheme={themeColor} />
+            {showDeleteModal && (
+                <DeleteConfirmationModal
+                    title="Confirm Delete"
+                    message="Are you sure you want to delete this task?"
+                    onConfirm={handleDelete}
+                    onCancel={() => setShowDeleteModal(false)}
+                    themeColor={themeColor}
+                />
+            )}
+
+            {showDeleteAllModal && (
+                <DeleteConfirmationModal
+                    title="Delete All Tasks"
+                    message="Are you sure you want to delete all tasks? This action cannot be undone."
+                    onConfirm={handleDeleteAll}
+                    onCancel={() => setShowDeleteAllModal(false)}
+                    themeColor={themeColor}
+                />
+            )}
+
+            <ThemePickerModal 
+                isOpen={showThemePicker} 
+                onClose={() => setShowThemePicker(false)} 
+                onSelectTheme={setThemeColor} 
+                currentTheme={themeColor} 
+            />
 
             <header className="d-flex justify-content-between align-items-center p-3 shadow-sm" style={{ backgroundColor: themeColor, color: 'white' }}>
                 <h1 className="h4 mb-0">TaskFlow</h1>

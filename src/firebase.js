@@ -53,38 +53,112 @@ export {
 export { analytics };
 
 // Helper function to get user's tasks
-export const getUserTasks = (userId, callback) => {
-  if (!userId) return () => {};
+export const getUserTasks = (userId, onSuccess, onError) => {
+  console.log('getUserTasks called with userId:', userId);
   
-  const q = query(
-    collection(db, tasksCollection),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
+  if (!userId) {
+    console.log('No userId provided, returning empty array');
+    onSuccess?.([]);
+    return () => {};
+  }
   
-  return onSnapshot(q, (querySnapshot) => {
-    const tasks = [];
-    querySnapshot.forEach((doc) => {
-      tasks.push({ id: doc.id, ...doc.data() });
-    });
-    callback(tasks);
-  });
+  try {
+    console.log('Setting up Firestore query for tasks');
+    const q = query(
+      collection(db, tasksCollection),
+      where('userId', '==', userId)
+    );
+    
+    console.log('Setting up onSnapshot listener');
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        console.log('Received snapshot from Firestore');
+        const tasks = [];
+        querySnapshot.forEach((doc) => {
+          console.log('Processing document:', doc.id, doc.data());
+          const data = doc.data();
+          const createdAt = data.createdAt;
+          const updatedAt = data.updatedAt;
+
+          // Handle both Firestore Timestamps and string dates gracefully
+          const processedCreatedAt = (createdAt && typeof createdAt.toDate === 'function')
+            ? createdAt.toDate().toISOString()
+            : createdAt || new Date().toISOString();
+
+          const processedUpdatedAt = (updatedAt && typeof updatedAt.toDate === 'function')
+            ? updatedAt.toDate().toISOString()
+            : updatedAt || new Date().toISOString();
+
+          tasks.push({ 
+            id: doc.id, 
+            ...data,
+            createdAt: processedCreatedAt,
+            updatedAt: processedUpdatedAt
+          });
+        });
+        console.log('Processed tasks:', tasks);
+        console.log('Firestore listener triggered. Tasks received:', tasks);
+        onSuccess?.(tasks);
+      },
+      (error) => {
+        console.error('Error in tasks listener:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        onError?.(error);
+      }
+    );
+    
+    console.log('onSnapshot listener set up successfully');
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error setting up tasks listener:', error);
+    onError?.(error);
+    return () => {};
+  }
 };
 
 // Helper function to add a new task
 export const addTask = async (userId, taskData) => {
-  if (!userId) throw new Error('User not authenticated');
+  console.log('addTask called with userId:', userId, 'taskData:', taskData);
   
-  const taskWithMetadata = {
-    ...taskData,
-    userId,
-    completed: false,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
+  if (!userId) {
+    const error = new Error('User not authenticated');
+    console.error('Authentication error:', error);
+    throw error;
+  }
   
-  const docRef = await addDoc(collection(db, tasksCollection), taskWithMetadata);
-  return { id: docRef.id, ...taskWithMetadata };
+  try {
+    const taskWithMetadata = {
+      ...taskData,
+      userId,
+      completed: taskData.completed || false,
+      locked: taskData.locked || false,
+      order: taskData.order || 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    
+    console.log('Adding task to Firestore:', taskWithMetadata);
+    const docRef = await addDoc(collection(db, tasksCollection), taskWithMetadata);
+    console.log('Task added successfully with ID:', docRef.id);
+    
+    // Return the task with the generated ID
+    const result = { 
+      id: docRef.id, 
+      ...taskWithMetadata,
+      // Convert Firestore timestamps to ISO strings for consistency
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    console.log('Returning task:', result);
+    return result;
+  } catch (error) {
+    console.error('Error in addTask:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    throw error;
+  }
 };
 
 // Helper function to update a task

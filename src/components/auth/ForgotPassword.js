@@ -1,14 +1,22 @@
-import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-const ForgotPassword = ({ themeColor }) => {
+const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { currentUser, resetPassword } = useAuth();
+  const navigate = useNavigate();
 
-  const { resetPassword } = useAuth();
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (currentUser) {
+      console.log('User already logged in, redirecting...');
+      navigate('/');
+    }
+  }, [currentUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,61 +31,95 @@ const ForgotPassword = ({ themeColor }) => {
     setIsLoading(true);
 
     try {
+      console.log('Sending password reset email to:', email);
       await resetPassword(email);
       setMessage('Password reset email sent. Please check your inbox.');
       setEmail('');
-    } catch (err) {
-      setError(err.message);
+      console.log('Password reset email sent successfully');
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      setError(error.message || 'Failed to send password reset email. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="row justify-content-center">
-      <div className="col-md-6">
-        <div className="card">
-          <div className="card-header text-white" style={{ backgroundColor: themeColor }}>
+    <div className="row justify-content-center min-vh-100 align-items-center">
+      <div className="col-md-6 col-lg-4">
+        <div className="card shadow">
+          <div className="card-header bg-primary text-white text-center py-3">
             <h1 className="h4 mb-0">Reset Password</h1>
           </div>
-          <div className="card-body">
-            {error && <div className="alert alert-danger">{error}</div>}
-            {message && <div className="alert alert-success">{message}</div>}
-            
-            <p className="mb-4">Enter your email address and we'll send you a link to reset your password.</p>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <label htmlFor="email" className="form-label">Email address</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+          <div className="card-body p-4">
+            {error && (
+              <div className="alert alert-warning alert-dismissible fade show" role="alert">
+                {error}
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setError('')}
+                  aria-label="Close"
+                ></button>
               </div>
-              
-              <button 
-                type="submit" 
-                className="btn w-100 mb-3"
-                style={{ backgroundColor: themeColor, color: 'white' }}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-              
-              <div className="text-center mt-3">
-                <Link 
-                  to="/login" 
-                  className="text-decoration-none"
-                  style={{ color: themeColor }}
-                >
-                  Back to Sign In
-                </Link>
+            )}
+            
+            {message ? (
+              <div className="alert alert-success">
+                {message}
+                <div className="mt-2">
+                  <Link to="/login" className="btn btn-outline-success btn-sm">
+                    Back to Login
+                  </Link>
+                </div>
               </div>
-            </form>
+            ) : (
+              <>
+                <p className="text-muted mb-4">
+                  Enter your email address and we'll send you a link to reset your password.
+                </p>
+                
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-3">
+                    <label htmlFor="email" className="form-label">Email address</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  
+                  <div className="d-grid gap-2">
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary btn-lg"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Sending...
+                        </>
+                      ) : 'Send Reset Link'}
+                    </button>
+                  </div>
+                </form>
+                
+                <div className="mt-4 pt-3 border-top text-center">
+                  <p className="mb-0">
+                    Remember your password?{' '}
+                    <Link to="/login" className="text-decoration-none fw-bold">
+                      Sign In
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

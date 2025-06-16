@@ -24,17 +24,48 @@ export function AuthProvider({ children }) {
   // Sign up with email and password
   const signup = async (email, password, displayName) => {
     try {
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(user, { displayName });
-      return user;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName });
+      
+      // Update the current user with the display name
+      setCurrentUser({
+        ...userCredential.user,
+        displayName: displayName
+      });
+      
+      return userCredential;
     } catch (error) {
+      console.error('Signup error:', error);
       throw error;
     }
   };
 
   // Sign in with email and password
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  const login = async (email, password) => {
+    console.log('🔑 [AuthContext] Login attempt with email:', email);
+    try {
+      console.log('⏳ [AuthContext] Calling Firebase signInWithEmailAndPassword...');
+      const startTime = Date.now();
+      
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      console.log(`✅ [AuthContext] Login successful in ${Date.now() - startTime}ms`);
+      console.log('👤 [AuthContext] User data:', {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        displayName: userCredential.user.displayName,
+        emailVerified: userCredential.user.emailVerified
+      });
+      
+      return userCredential;
+    } catch (error) {
+      console.error('❌ [AuthContext] Login error:', {
+        code: error.code,
+        message: error.message,
+        fullError: error
+      });
+      throw error;
+    }
   };
 
   // Sign in with Google
@@ -72,8 +103,24 @@ export function AuthProvider({ children }) {
 
   // Set up auth state listener
   useEffect(() => {
+    console.log('[AuthContext] Setting up auth state listener');
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      console.log('[AuthContext] Auth state changed:', user ? 'User signed in' : 'No user');
+      if (user) {
+        // User is signed in
+        const userData = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        };
+        console.log('[AuthContext] Setting current user:', userData);
+        setCurrentUser(userData);
+      } else {
+        // User is signed out
+        console.log('[AuthContext] User signed out, setting currentUser to null');
+        setCurrentUser(null);
+      }
       setLoading(false);
     });
 
@@ -83,6 +130,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     currentUser,
+    loading, // Expose loading state
     signup,
     login,
     logout,

@@ -2,7 +2,7 @@
   "name": "windsurf-todo",
   "version": "0.1.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "https://chagrizakaria.github.io/taskflow-todo/",
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

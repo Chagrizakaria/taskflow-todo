@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/taskflow-todo/static/css/main.9d0934b1.css",
-    "main.js": "/taskflow-todo/static/js/main.9ab0807a.js",
+    "main.js": "/taskflow-todo/static/js/main.9c3383ab.js",
     "static/js/453.65bd6f0b.chunk.js": "/taskflow-todo/static/js/453.65bd6f0b.chunk.js",
     "index.html": "/taskflow-todo/index.html",
     "main.9d0934b1.css.map": "/taskflow-todo/static/css/main.9d0934b1.css.map",
-    "main.9ab0807a.js.map": "/taskflow-todo/static/js/main.9ab0807a.js.map",
+    "main.9c3383ab.js.map": "/taskflow-todo/static/js/main.9c3383ab.js.map",
     "453.65bd6f0b.chunk.js.map": "/taskflow-todo/static/js/453.65bd6f0b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.9d0934b1.css",
-    "static/js/main.9ab0807a.js"
+    "static/js/main.9c3383ab.js"
   ]
 }
